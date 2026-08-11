@@ -251,7 +251,6 @@ def train_model(features, mob_adj, poi_sim, land_sim, model, model_loss, city, t
         loss.backward()
         optimizer.step()
 
-        # 不打印训练过程，只在评估点更新 best
         if epoch % 30 == 0:
             model.eval()
             with torch.no_grad():
@@ -291,8 +290,6 @@ def run_once(seed, device):
 def run_multiple_seeds(device, seeds, top_k=5):
     log_dir = make_log_dir()
 
-    # 重要：lambda_causal 是本实验的变量，必须写入文件名和日志内容，
-    # 否则不同 lambda 的实验会保存到同一个 txt，导致结果被覆盖或无法区分。
     lambda_causal = getattr(args, "lambda_causal", 0.0)
     lambda_str = str(lambda_causal).replace(".", "p")
 
@@ -306,7 +303,6 @@ def run_multiple_seeds(device, seeds, top_k=5):
 
     all_results = []
 
-    # 只把最终结果写入同一个txt，不写训练过程
     with open(result_path, "w", encoding="utf-8") as f:
         f.write("=============== Final Results of All Seeds ===============\n")
         f.write(f"Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
@@ -325,10 +321,10 @@ def run_multiple_seeds(device, seeds, top_k=5):
             line = "Seed {} | MAE: {:.4f}, RMSE: {:.4f}, R2: {:.4f}".format(
                 result["seed"], result["mae"], result["rmse"], result["r2"]
             )
-            print(f"[{i}/{len(seeds)}] {line}")   # 控制台可以看进度
-            f.write(line + "\n")                  # txt里只写最终结果行
+            print(f"[{i}/{len(seeds)}] {line}")   # 
+            f.write(line + "\n")                  #
 
-        # 排序
+        
         all_results = sorted(all_results, key=lambda x: x["r2"], reverse=True)
         top_results = all_results[:top_k]
 
@@ -343,65 +339,13 @@ def run_multiple_seeds(device, seeds, top_k=5):
     return top_results, all_results, result_path
 
 
-# def run_multiple_seeds(device, seeds, top_k=5):
-#     log_dir = make_log_dir()
-#     result_path = os.path.join(
-#         log_dir,
-#         f"all_results_city_{args.city}_task_{args.task}_emb_{args.embedding_size}_lr_{args.learning_rate}.txt"
-#     )
-
-#     all_results = []
-
-#     # 只把最终结果写入同一个txt，不写训练过程
-#     with open(result_path, "w", encoding="utf-8") as f:
-#         f.write("=============== Final Results of All Seeds ===============\n")
-#         f.write(f"Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
-#         f.write(f"City: {city}\n")
-#         f.write(f"Task: {task}\n")
-#         f.write(f"Total seeds: {len(seeds)}\n")
-#         f.write("==========================================================\n\n")
-
-#         for i, seed in enumerate(seeds, 1):
-#             result = run_once(seed, device)
-#             all_results.append(result)
-
-#             line = "Seed {} | MAE: {:.4f}, RMSE: {:.4f}, R2: {:.4f}".format(
-#                 result["seed"], result["mae"], result["rmse"], result["r2"]
-#             )
-#             print(f"[{i}/{len(seeds)}] {line}")   # 控制台可以看进度
-#             f.write(line + "\n")                  # txt里只写最终结果行
-
-#         # 排序
-#         all_results = sorted(all_results, key=lambda x: x["r2"], reverse=True)
-#         top_results = all_results[:top_k]
-
-#         f.write("\n")
-#         f.write("================ Best Top-{} Seeds ================\n".format(top_k))
-#         for rank, res in enumerate(top_results, 1):
-#             line = "Top {} | Seed {} | MAE: {:.4f}, RMSE: {:.4f}, R2: {:.4f}".format(
-#                 rank, res["seed"], res["mae"], res["rmse"], res["r2"]
-#             )
-#             f.write(line + "\n")
-
-#     return top_results, all_results, result_path
-
-
 # ============================================================
 # Main
 # ============================================================
 if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    # 200 个 seed
-    seeds = [9, 90, 129, 68, 58, 46, 22, 113, 3, 144,
-    99, 143, 173, 72, 137, 89, 37, 62, 52, 6,
-    189, 31, 18, 105, 81, 163, 127, 172, 7, 116,
-    103, 5, 4, 96, 181, 36, 155, 114, 95, 152, 12]
-    # seeds = list(range(1, 201))
-
-    # 如果想随机 200 个 seed：
-    # random.seed(42)
-    # seeds = random.sample(range(1, 100000), 200)
+    seeds = [42]
 
     top5_results, all_results, result_path = run_multiple_seeds(device, seeds, top_k=5)
 
